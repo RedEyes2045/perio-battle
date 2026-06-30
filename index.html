@@ -103,12 +103,14 @@ ruby rt{font-size:.5em;font-weight:500;}
 #opening.dawn{background:radial-gradient(120% 100% at 50% 18%, rgba(255,180,150,.22), rgba(20,5,12,.97) 62%);}
 .tooth-pile{position:absolute;left:0;right:0;top:0;bottom:0;z-index:1;overflow:hidden;pointer-events:none;}
 .tooth-pile span{position:absolute;filter:brightness(.2) blur(1.6px);opacity:.55;will-change:transform;}
-.tooth-pile span.falling{animation:toothFall var(--dur,2.6s) cubic-bezier(.33,.14,.6,1) both;}
+.tooth-pile span.falling{animation:toothFall var(--dur,5.4s) linear both;}
+/* 雪のように等速でふわり、左右にゆらめきながら降りて積もる（バウンド・大ジャンプを排除） */
 @keyframes toothFall{
   0%{transform:translateY(var(--fall,-110vh)) translateX(var(--dx,0)) rotate(var(--r0,0deg));opacity:0;}
-  10%{opacity:.5;}
-  55%{transform:translateY(calc(var(--fall,-110vh)*.26)) translateX(calc(var(--dx,0)*-.55)) rotate(calc(var(--rf,0deg) - 16deg));}
-  82%{transform:translateY(7px) translateX(0) rotate(calc(var(--rf,0deg) + 4deg));}
+  8%{opacity:.5;}
+  25%{transform:translateY(calc(var(--fall,-110vh)*.74)) translateX(calc(var(--dx,0)*.7)) rotate(calc(var(--rf,0deg) - 9deg));}
+  50%{transform:translateY(calc(var(--fall,-110vh)*.48)) translateX(calc(var(--dx,0)*-.7)) rotate(calc(var(--rf,0deg) + 7deg));}
+  75%{transform:translateY(calc(var(--fall,-110vh)*.22)) translateX(calc(var(--dx,0)*.45)) rotate(calc(var(--rf,0deg) - 4deg));}
   100%{transform:translateY(0) translateX(0) rotate(var(--rf,0deg));opacity:.55;}
 }
 #opening.dawn .tooth-pile span{filter:brightness(.4) blur(1.4px);opacity:.4;transition:filter 1.8s,opacity 1.8s;}
@@ -588,22 +590,26 @@ function bossVisual(b){
 let openPos=0, opTyping=false, opTimer=null, opCurrentEl=null, opFullText="";
 /* 歯の降雪（spec 10-2）：上端から舞い落ちて下端に堆積。質感（filter/opacity）は据え置き、動きだけ追加。
    「山のように積み上がった、歯の亡骸」の一行（PILE_CLIMAX）で山が育ちきるよう尺を合わせる。 */
-const MAX_TEETH = 34;
+const MAX_TEETH = 64;
 const PILE_CLIMAX = OPENING.findIndex(s => (s.h||'').indexOf('亡骸') >= 0);
 let snowCount = 0, snowTimer = null, snowAnimating = false, openingPlayed = false;
 function makeTooth(falling){
   const s = document.createElement('span');
   s.textContent = '🦷';
-  s.style.left = (Math.random()*94) + '%';
-  s.style.fontSize = (26 + Math.random()*40) + 'px';
-  s.style.bottom = (-8 + Math.random()*64) + 'px';
+  // 中高(なかだか)の山：中央ほど高く、左右端へなだらかに低くなる稜線
+  const cx = (Math.random() + Math.random()) / 2;   // 三角分布で中央に密集
+  s.style.left = (cx * 94) + '%';
+  s.style.fontSize = (28 + Math.random()*50) + 'px';
+  const dist = Math.abs(cx - 0.5) * 2;              // 0=中央, 1=端
+  const localMax = 34 * (1 - dist * 0.72);          // 中央~34vh / 端~9.5vh = 山の稜線
+  s.style.bottom = (-2 + Math.pow(Math.random(), 1.8) * localMax) + 'vh';
   const rf = (Math.random()*56 - 28);
   if(falling){
     s.style.setProperty('--rf', rf + 'deg');
-    s.style.setProperty('--r0', (Math.random()*100 - 50) + 'deg');
-    s.style.setProperty('--dx', (Math.random()*72 - 36) + 'px');
-    s.style.setProperty('--fall', (-(105 + Math.random()*22)) + 'vh');
-    s.style.setProperty('--dur', (2.2 + Math.random()*1.2) + 's');
+    s.style.setProperty('--r0', (Math.random()*120 - 60) + 'deg');
+    s.style.setProperty('--dx', (Math.random()*100 - 50) + 'px');
+    s.style.setProperty('--fall', (-(108 + Math.random()*24)) + 'vh');
+    s.style.setProperty('--dur', (4.4 + Math.random()*2.4) + 's');
     s.className = 'falling';
     // 着地後は静止シルエットへ戻す（質感を据え置き、dawn の減光が効くように）
     s.addEventListener('animationend', ()=>{ s.classList.remove('falling'); s.style.transform = 'rotate(' + rf + 'deg)'; }, {once:true});
@@ -622,8 +628,8 @@ function startSnow(){                 // 初見：ゆっくり降り積もる
   const pile = $('toothPile');
   pile.innerHTML = ''; snowCount = 0; snowAnimating = true;
   clearInterval(snowTimer);
-  dropTooth(); dropTooth();
-  snowTimer = setInterval(()=>{ if(!dropTooth()){ clearInterval(snowTimer); snowTimer=null; } }, 620);
+  dropTooth(); dropTooth(); dropTooth();
+  snowTimer = setInterval(()=>{ if(!dropTooth()){ clearInterval(snowTimer); snowTimer=null; } }, 380);
 }
 function completeSnow(){              // 「亡骸」の一行で残りを一気に降らせ山を育てきる
   if(!snowAnimating) return;
