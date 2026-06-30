@@ -80,8 +80,11 @@ ruby rt{font-size:.5em;font-weight:500;}
 .title-main{font-family:'Reggae One',cursive;font-size:clamp(30px,9vw,46px);line-height:1.25;
   color:var(--bone);text-shadow:0 0 18px rgba(255,25,45,.55),0 4px 0 #3a0008;}
 .title-main .red{color:var(--blood-bright);text-shadow:0 0 22px rgba(255,30,50,.9);}
-.title-bugs{font-size:40px;margin:22px 0 6px;letter-spacing:6px;filter:drop-shadow(0 0 10px rgba(255,40,60,.6));
-  animation:lurk 3s ease-in-out infinite;}
+.title-bugs{display:flex;justify-content:center;align-items:center;gap:4px;margin:20px 0 6px;
+  filter:drop-shadow(0 0 10px rgba(255,40,60,.6));animation:lurk 3s ease-in-out infinite;}
+.title-bug-img{width:clamp(58px,20vw,88px);height:clamp(58px,20vw,88px);object-fit:cover;display:block;
+  -webkit-mask:radial-gradient(circle at 50% 47%, #000 50%, transparent 76%);
+  mask:radial-gradient(circle at 50% 47%, #000 50%, transparent 76%);}
 @keyframes lurk{50%{transform:translateY(6px) scale(1.04)}}
 .title-caption{font-size:12px;color:#9a8d8d;margin-top:6px;letter-spacing:.15em;}
 .btn-start{margin-top:34px;font-family:'Reggae One',cursive;font-size:22px;color:#fff;
@@ -98,9 +101,18 @@ ruby rt{font-size:.5em;font-weight:500;}
   background:radial-gradient(120% 90% at 50% 120%, rgba(40,5,15,.5), rgba(3,2,8,.96) 70%);
   transition:background 1.8s ease;}
 #opening.dawn{background:radial-gradient(120% 100% at 50% 18%, rgba(255,180,150,.22), rgba(20,5,12,.97) 62%);}
-.tooth-pile{position:absolute;left:0;right:0;bottom:0;height:36%;z-index:1;overflow:hidden;pointer-events:none;}
-.tooth-pile span{position:absolute;filter:brightness(.2) blur(1.6px);opacity:.55;}
+.tooth-pile{position:absolute;left:0;right:0;top:0;bottom:0;z-index:1;overflow:hidden;pointer-events:none;}
+.tooth-pile span{position:absolute;filter:brightness(.2) blur(1.6px);opacity:.55;will-change:transform;}
+.tooth-pile span.falling{animation:toothFall var(--dur,2.6s) cubic-bezier(.33,.14,.6,1) both;}
+@keyframes toothFall{
+  0%{transform:translateY(var(--fall,-110vh)) translateX(var(--dx,0)) rotate(var(--r0,0deg));opacity:0;}
+  10%{opacity:.5;}
+  55%{transform:translateY(calc(var(--fall,-110vh)*.26)) translateX(calc(var(--dx,0)*-.55)) rotate(calc(var(--rf,0deg) - 16deg));}
+  82%{transform:translateY(7px) translateX(0) rotate(calc(var(--rf,0deg) + 4deg));}
+  100%{transform:translateY(0) translateX(0) rotate(var(--rf,0deg));opacity:.55;}
+}
 #opening.dawn .tooth-pile span{filter:brightness(.4) blur(1.4px);opacity:.4;transition:filter 1.8s,opacity 1.8s;}
+@media (prefers-reduced-motion:reduce){.tooth-pile span.falling{animation:opFade 1s ease both;}}
 .op-skip{position:absolute;top:14px;left:14px;z-index:30;font-size:12px;color:#9a8d8d;
   background:rgba(20,5,12,.7);border:1px solid #5a2230;border-radius:10px;padding:8px 14px;cursor:pointer;}
 .opening-inner{position:relative;z-index:6;width:100%;max-width:440px;
@@ -275,7 +287,11 @@ ruby rt{font-size:.5em;font-weight:500;}
   <section class="screen active" id="title">
     <div class="title-sub">口腔（こうくう）の闇より来たる</div>
     <h1 class="title-main">ハグキを守れ！<br><span class="red">レッドコンプレックス</span><br>大決戦</h1>
-    <div class="title-bugs">🦠 👾 🕷️</div>
+    <div class="title-bugs">
+      <img class="title-bug-img" src="forsythia.png" alt="フォーサス">
+      <img class="title-bug-img" src="denticola.png" alt="デンティ">
+      <img class="title-bug-img" src="gingivalis.png" alt="ジンジー">
+    </div>
     <div class="title-caption">歯ぐきの奥にひそむ、3びきの菌。<br>毎日のケアで、闇を打ち払え。</div>
     <button class="btn-start" id="startBtn">バトル開始</button>
   </section>
@@ -570,22 +586,60 @@ function bossVisual(b){
 
 /* ====== オープニング演出 ====== */
 let openPos=0, opTyping=false, opTimer=null, opCurrentEl=null, opFullText="";
-function buildToothPile(){
-  const pile = $('toothPile');
-  if(pile.childElementCount) return;
-  for(let i=0;i<16;i++){
-    const s = document.createElement('span');
-    s.textContent = '🦷';
-    s.style.left = (Math.random()*94) + '%';
-    s.style.fontSize = (26 + Math.random()*40) + 'px';
-    s.style.bottom = (-8 + Math.random()*64) + 'px';
-    s.style.transform = 'rotate(' + (Math.random()*60-30) + 'deg)';
-    pile.appendChild(s);
+/* 歯の降雪（spec 10-2）：上端から舞い落ちて下端に堆積。質感（filter/opacity）は据え置き、動きだけ追加。
+   「山のように積み上がった、歯の亡骸」の一行（PILE_CLIMAX）で山が育ちきるよう尺を合わせる。 */
+const MAX_TEETH = 34;
+const PILE_CLIMAX = OPENING.findIndex(s => (s.h||'').indexOf('亡骸') >= 0);
+let snowCount = 0, snowTimer = null, snowAnimating = false, openingPlayed = false;
+function makeTooth(falling){
+  const s = document.createElement('span');
+  s.textContent = '🦷';
+  s.style.left = (Math.random()*94) + '%';
+  s.style.fontSize = (26 + Math.random()*40) + 'px';
+  s.style.bottom = (-8 + Math.random()*64) + 'px';
+  const rf = (Math.random()*56 - 28);
+  if(falling){
+    s.style.setProperty('--rf', rf + 'deg');
+    s.style.setProperty('--r0', (Math.random()*100 - 50) + 'deg');
+    s.style.setProperty('--dx', (Math.random()*72 - 36) + 'px');
+    s.style.setProperty('--fall', (-(105 + Math.random()*22)) + 'vh');
+    s.style.setProperty('--dur', (2.2 + Math.random()*1.2) + 's');
+    s.className = 'falling';
+    // 着地後は静止シルエットへ戻す（質感を据え置き、dawn の減光が効くように）
+    s.addEventListener('animationend', ()=>{ s.classList.remove('falling'); s.style.transform = 'rotate(' + rf + 'deg)'; }, {once:true});
+  } else {
+    s.style.transform = 'rotate(' + rf + 'deg)';
   }
+  return s;
+}
+function dropTooth(){
+  if(snowCount >= MAX_TEETH) return false;
+  $('toothPile').appendChild(makeTooth(true));
+  snowCount++;
+  return true;
+}
+function startSnow(){                 // 初見：ゆっくり降り積もる
+  const pile = $('toothPile');
+  pile.innerHTML = ''; snowCount = 0; snowAnimating = true;
+  clearInterval(snowTimer);
+  dropTooth(); dropTooth();
+  snowTimer = setInterval(()=>{ if(!dropTooth()){ clearInterval(snowTimer); snowTimer=null; } }, 620);
+}
+function completeSnow(){              // 「亡骸」の一行で残りを一気に降らせ山を育てきる
+  if(!snowAnimating) return;
+  clearInterval(snowTimer); snowTimer = null;
+  snowTimer = setInterval(()=>{ if(!dropTooth()){ clearInterval(snowTimer); snowTimer=null; snowAnimating=false; } }, 95);
+}
+function fillSnowInstant(){           // スキップ・2周目：即・完成した山（静止シルエット）
+  const pile = $('toothPile');
+  pile.innerHTML = ''; snowCount = 0; snowAnimating = false;
+  clearInterval(snowTimer); snowTimer = null;
+  for(let i=0;i<MAX_TEETH;i++){ pile.appendChild(makeTooth(false)); snowCount++; }
 }
 function openOpening(){
   Sound.resume();
-  buildToothPile();
+  if(openingPlayed){ fillSnowInstant(); } else { startSnow(); }
+  openingPlayed = true;
   openPos = 0; opTyping = false;
   $('openingText').innerHTML = '';
   $('opening').classList.remove('dawn');
@@ -596,6 +650,7 @@ function openOpening(){
 function showOpeningStanza(){
   const st = OPENING[openPos];
   const box = $('openingText');
+  if(openPos === PILE_CLIMAX) completeSnow();   // 言葉と同時に山が育ちきる
   if(st.turn){ box.innerHTML = ''; $('opening').classList.add('dawn'); }
   box.querySelectorAll('.op-line').forEach(el=>el.classList.add('dim'));
   const div = document.createElement('div');
@@ -641,6 +696,8 @@ function advanceOpening(){
 }
 function endOpening(){
   if(opTimer){ clearInterval(opTimer); opTimer=null; }
+  if(snowTimer){ clearInterval(snowTimer); snowTimer=null; }
+  snowAnimating = false;
   Sound.stopAmbience();
   newGame();
 }
