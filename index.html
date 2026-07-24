@@ -397,7 +397,7 @@ ruby rt{font-size:.5em;font-weight:500;}
     <div class="win-score" id="winScore"></div>
     <div class="win-care">
       <b style="color:#ffd23f">きみの必殺技＝毎日のケア</b><br>
-      🪥 歯ブラシ　<img class="w-icon" src="floss.png" alt="糸ようじ"> 糸ようじ　🪥 ワンタフトブラシ<br>
+      🪥 歯ブラシ　<img class="w-icon" src="floss.png" alt="糸ようじ"> 糸ようじ　<img class="w-icon" src="onetuft.png" alt="ワンタフトブラシ"> ワンタフトブラシ<br>
       💧 うがい　🦷 歯医者さんのクリーニング<br>
       毎日のケアと、ときどきのプロケア。この両輪で歯は守られる。
     </div>
@@ -580,7 +580,7 @@ const BOSSES = [
 const SKILLS = [
   {name:"ハブラシビーム！", emoji:"🪥"},
   {name:"糸ようじチョップ！", emoji:"🧵", img:"floss.png"},
-  {name:"ワンタフトソード！", emoji:"🪥"},
+  {name:"ワンタフトソード！", emoji:"🪥", img:"onetuft.png"},
   {name:"ぶくぶくウォッシュ！", emoji:"💧"},
 ];
 const KO_SKILL = {name:"フルケアコンボ！", emoji:"✨"};            // 3菌へのとどめ（家庭ケアの全力技）
@@ -1003,7 +1003,7 @@ const TARTAR_DIALOG = [
 const HOME_WEAPONS = [
   {key:"brush",   name:"歯ブラシ",        emoji:"🪥", skill:"ハブラシビーム！"},
   {key:"floss",   name:"糸ようじ",        emoji:"🧵", img:"floss.png", skill:"糸ようじチョップ！"},
-  {key:"onetuft", name:"ワンタフトブラシ", emoji:"🪥", skill:"ワンタフトソード！"}
+  {key:"onetuft", name:"ワンタフトブラシ", emoji:"🪥", img:"onetuft.png", skill:"ワンタフトソード！"}
 ];
 const TARTAR_REALIZE = [
   "歯ブラシも、糸ようじも、ワンタフトブラシも……歯石には、とどかない。",
