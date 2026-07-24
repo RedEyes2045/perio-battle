@@ -101,22 +101,39 @@ ruby rt{font-size:.5em;font-weight:500;}
   background:radial-gradient(120% 90% at 50% 120%, rgba(40,5,15,.5), rgba(3,2,8,.96) 70%);
   transition:background 1.8s ease;}
 #opening.dawn{background:radial-gradient(120% 100% at 50% 18%, rgba(255,180,150,.22), rgba(20,5,12,.97) 62%);}
-.tooth-pile{position:absolute;left:0;right:0;top:0;bottom:0;z-index:1;overflow:hidden;pointer-events:none;}
-/* 暗がりに浮かび上がる骨のシルエット（spec 11-1）：明度を上げ、黒い縁取りで背景に溶けるのを防ぐ */
-.tooth-pile span{position:absolute;filter:brightness(.7) blur(1.0px) drop-shadow(0 0 6px rgba(0,0,0,.85));opacity:.8;will-change:transform;}
+/* z-index を持たせない＝スタッキングコンテキストを作らない。作ると分離グループになり、
+   子の mix-blend-mode が #opening の背景に届かず無効化される。重なり順は兄弟側の z-index(6/30)で担保。 */
+.tooth-pile{position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none;}
+/* 亡骸かつ亡霊（spec 11-2）：物体として置かず「光」として背景に浮かべる。
+   screen=黒が透けて実体感が消える／grayscale=絵文字のクリーム色を抜き骨と灰の色に／
+   contrast↓=陰影を潰して立体でなく像に／冷たい青白の燐光で輪郭だけ残す。 */
+.tooth-pile span{position:absolute;
+  filter:grayscale(.9) brightness(1.1) contrast(.75) blur(1.5px) drop-shadow(0 0 10px rgba(170,200,225,.30));
+  opacity:.30;mix-blend-mode:screen;will-change:transform;}
 .tooth-pile span.falling{animation:toothFall var(--dur,5.4s) linear both;}
+/* 着地後のゆっくりした明滅＝亡霊の呼吸。歯ごとに周期と遅延を散らし、同時に光らせない（spec 11-2 ⒝） */
+.tooth-pile span.settled{animation:ghostBreath var(--bdur,5s) var(--bd,0s) ease-in-out infinite alternate;}
+@keyframes ghostBreath{from{opacity:.23;} to{opacity:.36;}}
 /* 雪のように等速でふわり、左右にゆらめきながら降りて積もる（バウンド・大ジャンプを排除） */
 @keyframes toothFall{
   0%{transform:translateY(var(--fall,-110vh)) translateX(var(--dx,0)) rotate(var(--r0,0deg));opacity:0;}
-  8%{opacity:.6;}
+  8%{opacity:.22;}
   25%{transform:translateY(calc(var(--fall,-110vh)*.74)) translateX(calc(var(--dx,0)*.7)) rotate(calc(var(--rf,0deg) - 9deg));}
   50%{transform:translateY(calc(var(--fall,-110vh)*.48)) translateX(calc(var(--dx,0)*-.7)) rotate(calc(var(--rf,0deg) + 7deg));}
   75%{transform:translateY(calc(var(--fall,-110vh)*.22)) translateX(calc(var(--dx,0)*.45)) rotate(calc(var(--rf,0deg) - 4deg));}
-  100%{transform:translateY(0) translateX(0) rotate(var(--rf,0deg));opacity:.8;}
+  100%{transform:translateY(0) translateX(0) rotate(var(--rf,0deg));opacity:.30;}
 }
-/* 明転：山が薄れて希望が差す。opacity は低めを維持しつつ、旧(.4)より見えるように */
-#opening.dawn .tooth-pile span{filter:brightness(.95) blur(.9px);opacity:.55;transition:filter 1.8s,opacity 1.8s;}
-@media (prefers-reduced-motion:reduce){.tooth-pile span.falling{animation:opFade 1s ease both;}}
+/* 明転：成仏していくように、さらに薄れる（消さずに希望が差す＝spec 1.5の転換は維持） */
+#opening.dawn .tooth-pile span{
+  filter:grayscale(.95) brightness(1.2) contrast(.7) blur(1.6px) drop-shadow(0 0 12px rgba(200,215,235,.25));
+  opacity:.15;transition:filter 1.8s,opacity 1.8s;}
+#opening.dawn .tooth-pile span.settled{animation:none;}   /* 明滅を止めて静かに薄れさせる */
+/* 動きを減らす設定：落下も明滅もせず、静かに浮かび上がるだけ（終値は静止時と同じ .30） */
+@keyframes toothAppear{from{opacity:0;} to{opacity:.30;}}
+@media (prefers-reduced-motion:reduce){
+  .tooth-pile span.falling{animation:toothAppear 1s ease both;}
+  .tooth-pile span.settled{animation:none;}
+}
 .op-skip{position:absolute;top:14px;left:14px;z-index:30;font-size:12px;color:#9a8d8d;
   background:rgba(20,5,12,.7);border:1px solid #5a2230;border-radius:10px;padding:8px 14px;cursor:pointer;}
 .opening-inner{position:relative;z-index:6;width:100%;max-width:440px;
@@ -606,6 +623,9 @@ function makeTooth(falling){
   const localMax = 34 * (1 - dist * 0.72);          // 中央~34vh / 端~9.5vh = 山の稜線
   s.style.bottom = (-2 + Math.pow(Math.random(), 1.8) * localMax) + 'vh';
   const rf = (Math.random()*56 - 28);
+  // 亡霊の呼吸：周期と開始をばらけさせ、全部が同時に光る人工感を消す（spec 11-2 ⒝）
+  s.style.setProperty('--bdur', (4.2 + Math.random()*2.4) + 's');
+  s.style.setProperty('--bd', (-Math.random()*5).toFixed(2) + 's');
   if(falling){
     s.style.setProperty('--rf', rf + 'deg');
     s.style.setProperty('--r0', (Math.random()*120 - 60) + 'deg');
@@ -613,9 +633,13 @@ function makeTooth(falling){
     s.style.setProperty('--fall', (-(108 + Math.random()*24)) + 'vh');
     s.style.setProperty('--dur', (4.4 + Math.random()*2.4) + 's');
     s.className = 'falling';
-    // 着地後は静止シルエットへ戻す（質感を据え置き、dawn の減光が効くように）
-    s.addEventListener('animationend', ()=>{ s.classList.remove('falling'); s.style.transform = 'rotate(' + rf + 'deg)'; }, {once:true});
+    // 着地後は静止シルエット＋明滅へ（dawn の減光が効くように class で切り替える）
+    s.addEventListener('animationend', ()=>{
+      s.classList.remove('falling'); s.classList.add('settled');
+      s.style.transform = 'rotate(' + rf + 'deg)';
+    }, {once:true});
   } else {
+    s.classList.add('settled');
     s.style.transform = 'rotate(' + rf + 'deg)';
   }
   return s;
