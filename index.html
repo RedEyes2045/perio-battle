@@ -102,18 +102,20 @@ ruby rt{font-size:.5em;font-weight:500;}
   transition:background 1.8s ease;}
 #opening.dawn{background:radial-gradient(120% 100% at 50% 18%, rgba(255,180,150,.22), rgba(20,5,12,.97) 62%);}
 .tooth-pile{position:absolute;left:0;right:0;top:0;bottom:0;z-index:1;overflow:hidden;pointer-events:none;}
-.tooth-pile span{position:absolute;filter:brightness(.2) blur(1.6px);opacity:.55;will-change:transform;}
+/* 暗がりに浮かび上がる骨のシルエット（spec 11-1）：明度を上げ、黒い縁取りで背景に溶けるのを防ぐ */
+.tooth-pile span{position:absolute;filter:brightness(.7) blur(1.0px) drop-shadow(0 0 6px rgba(0,0,0,.85));opacity:.8;will-change:transform;}
 .tooth-pile span.falling{animation:toothFall var(--dur,5.4s) linear both;}
 /* 雪のように等速でふわり、左右にゆらめきながら降りて積もる（バウンド・大ジャンプを排除） */
 @keyframes toothFall{
   0%{transform:translateY(var(--fall,-110vh)) translateX(var(--dx,0)) rotate(var(--r0,0deg));opacity:0;}
-  8%{opacity:.5;}
+  8%{opacity:.6;}
   25%{transform:translateY(calc(var(--fall,-110vh)*.74)) translateX(calc(var(--dx,0)*.7)) rotate(calc(var(--rf,0deg) - 9deg));}
   50%{transform:translateY(calc(var(--fall,-110vh)*.48)) translateX(calc(var(--dx,0)*-.7)) rotate(calc(var(--rf,0deg) + 7deg));}
   75%{transform:translateY(calc(var(--fall,-110vh)*.22)) translateX(calc(var(--dx,0)*.45)) rotate(calc(var(--rf,0deg) - 4deg));}
-  100%{transform:translateY(0) translateX(0) rotate(var(--rf,0deg));opacity:.55;}
+  100%{transform:translateY(0) translateX(0) rotate(var(--rf,0deg));opacity:.8;}
 }
-#opening.dawn .tooth-pile span{filter:brightness(.4) blur(1.4px);opacity:.4;transition:filter 1.8s,opacity 1.8s;}
+/* 明転：山が薄れて希望が差す。opacity は低めを維持しつつ、旧(.4)より見えるように */
+#opening.dawn .tooth-pile span{filter:brightness(.95) blur(.9px);opacity:.55;transition:filter 1.8s,opacity 1.8s;}
 @media (prefers-reduced-motion:reduce){.tooth-pile span.falling{animation:opFade 1s ease both;}}
 .op-skip{position:absolute;top:14px;left:14px;z-index:30;font-size:12px;color:#9a8d8d;
   background:rgba(20,5,12,.7);border:1px solid #5a2230;border-radius:10px;padding:8px 14px;cursor:pointer;}
