@@ -196,6 +196,9 @@ ruby rt{font-size:.5em;font-weight:500;}
   mask:radial-gradient(circle at 50% 47%, #000 50%, transparent 76%);}
 .story-art .boss-img{width:clamp(150px,46vw,220px);height:clamp(150px,46vw,220px);}
 .tartar-rock{filter:drop-shadow(0 0 22px rgba(190,170,90,.55)) sepia(.35) saturate(.7) brightness(.95);}
+/* 武器アイコン画像（絵文字と視覚的に同じ大きさで並ぶように高さをemで揃える） */
+.w-icon{height:1.4em;width:auto;vertical-align:-.3em;
+  filter:drop-shadow(0 0 5px rgba(150,210,255,.4));}
 
 /* ハグキの城（プレイヤー） */
 .gum-castle{position:relative;z-index:6;padding:4px 14px 8px;}
@@ -253,6 +256,7 @@ ruby rt{font-size:.5em;font-weight:500;}
   text-shadow:0 0 22px rgba(255,210,63,.9),0 0 6px #fff;animation:fxSkill .9s ease-out;z-index:21;}
 @keyframes fxSkill{0%{transform:scale(0) rotate(-12deg);opacity:0}40%{transform:scale(1.15) rotate(3deg);opacity:1}70%{transform:scale(1)}100%{transform:scale(1.05);opacity:0}}
 .fx-emoji{font-size:80px;animation:fxEmoji .9s ease-out;}
+.fx-emoji .w-icon{height:80px;vertical-align:middle;filter:drop-shadow(0 0 16px rgba(150,210,255,.55));}
 @keyframes fxEmoji{0%{transform:scale(0) translateX(-40px)}50%{transform:scale(1.3)}100%{transform:scale(1) translateX(0);opacity:0}}
 .fx-attack{position:absolute;inset:0;background:radial-gradient(circle,rgba(255,0,30,.5),transparent 55%);
   animation:fxAtk .6s;}
@@ -393,7 +397,7 @@ ruby rt{font-size:.5em;font-weight:500;}
     <div class="win-score" id="winScore"></div>
     <div class="win-care">
       <b style="color:#ffd23f">きみの必殺技＝毎日のケア</b><br>
-      🪥 歯ブラシ　🧵 糸ようじ　🪥 ワンタフトブラシ<br>
+      🪥 歯ブラシ　<img class="w-icon" src="floss.png" alt="糸ようじ"> 糸ようじ　🪥 ワンタフトブラシ<br>
       💧 うがい　🦷 歯医者さんのクリーニング<br>
       毎日のケアと、ときどきのプロケア。この両輪で歯は守られる。
     </div>
@@ -575,7 +579,7 @@ const BOSSES = [
 
 const SKILLS = [
   {name:"ハブラシビーム！", emoji:"🪥"},
-  {name:"糸ようじチョップ！", emoji:"🧵"},
+  {name:"糸ようじチョップ！", emoji:"🧵", img:"floss.png"},
   {name:"ワンタフトソード！", emoji:"🪥"},
   {name:"ぶくぶくウォッシュ！", emoji:"💧"},
 ];
@@ -603,6 +607,10 @@ function show(name){
 /* ボスの見た目：画像があれば<img>、なければ絵文字 */
 function bossVisual(b){
   return b.img ? `<img class="boss-img" src="${b.img}" alt="${b.name}">` : b.emoji;
+}
+/* 武器/技の見た目：画像があれば<img>、なければ絵文字（将来アイコンを差し替えられる構造） */
+function iconVisual(o){
+  return o.img ? `<img class="w-icon" src="${o.img}" alt="${o.name||''}">` : o.emoji;
 }
 
 /* ====== オープニング演出 ====== */
@@ -885,7 +893,7 @@ function doWrong(q){
 function playSkillFx(skill, isAttack, after){
   const fx = $('fxLayer');
   fx.classList.toggle('attack', isAttack);
-  $('fxEmoji').textContent = skill.emoji;
+  $('fxEmoji').innerHTML = iconVisual(skill);
   $('fxSkill').textContent = skill.name;
   // フラッシュ要素を作り直してアニメをリスタート
   const flash = $('fxFlash'); flash.style.display = isAttack ? 'none' : 'block';
@@ -934,7 +942,7 @@ function showExplain(correct, q, skill, defeated){
   if(correct){
     head = defeated ? '<ruby>撃破<rt>げきは</rt></ruby>！！' : '正解！';
     headClass = 'good';
-    skillLine = skill ? `<div class="skill-name">${skill.emoji} ${skill.name}</div>` : '';
+    skillLine = skill ? `<div class="skill-name">${iconVisual(skill)} ${skill.name}</div>` : '';
   } else {
     head = 'ざんねん…！';
     headClass = 'bad';
@@ -994,7 +1002,7 @@ const TARTAR_DIALOG = [
 ];
 const HOME_WEAPONS = [
   {key:"brush",   name:"歯ブラシ",        emoji:"🪥", skill:"ハブラシビーム！"},
-  {key:"floss",   name:"糸ようじ",        emoji:"🧵", skill:"糸ようじチョップ！"},
+  {key:"floss",   name:"糸ようじ",        emoji:"🧵", img:"floss.png", skill:"糸ようじチョップ！"},
   {key:"onetuft", name:"ワンタフトブラシ", emoji:"🪥", skill:"ワンタフトソード！"}
 ];
 const TARTAR_REALIZE = [
@@ -1039,7 +1047,7 @@ function renderTartarTry(){
   HOME_WEAPONS.forEach(w=>{
     const btn = document.createElement('button');
     btn.className = 'opt' + (tartarTried[w.key] ? ' dim' : '');
-    btn.innerHTML = `${w.emoji} ${w.name}`;
+    btn.innerHTML = `${iconVisual(w)} ${w.name}`;
     btn.disabled = !!tartarTried[w.key];
     btn.addEventListener('click', ()=>tryWeapon(w));
     wrap.appendChild(btn);
@@ -1049,7 +1057,7 @@ function tryWeapon(w){
   if(tartarScene !== 'try' || tartarTried[w.key]) return;
   tartarTried[w.key] = true;
   Sound.resume();
-  playSkillFx({name:w.skill, emoji:w.emoji}, false, ()=>{
+  playSkillFx({name:w.skill, emoji:w.emoji, img:w.img}, false, ()=>{
     Sound.hit();
     $('tartarArt').classList.add('gnashing');   // 揺れるが歯石は無傷
     spawnTartarNoDamage();
